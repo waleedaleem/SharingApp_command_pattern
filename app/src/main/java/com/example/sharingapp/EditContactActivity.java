@@ -2,8 +2,8 @@ package com.example.sharingapp;
 
 import android.content.Context;
 import android.content.Intent;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.EditText;
 
@@ -12,32 +12,38 @@ import android.widget.EditText;
  * contact's id.
  * Note: You will not be able contacts which are "active" borrowers
  */
-public class EditContactActivity extends AppCompatActivity {
+public class EditContactActivity extends AppCompatActivity implements Observer {
 
     private ContactList contact_list = new ContactList();
+    private ContactListController contact_list_controller = new ContactListController(contact_list);
     private Contact contact;
+    private ContactController contact_controller;
     private EditText email;
     private EditText username;
     private Context context;
+
+    private boolean on_create_update = false;
+    private int pos;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_edit_contact);
 
-        context = getApplicationContext();
-        contact_list.loadContacts(context);
-
-        Intent intent = getIntent();
-        int pos = intent.getIntExtra("position", 0);
-
-        contact = contact_list.getContact(pos);
-
         username = (EditText) findViewById(R.id.username);
         email = (EditText) findViewById(R.id.email);
 
-        username.setText(contact.getUsername());
-        email.setText(contact.getEmail());
+        Intent intent = getIntent();
+        pos = intent.getIntExtra("position", 0);
+
+        context = getApplicationContext();
+
+        on_create_update = true;
+
+        contact_list_controller.addObserver(this);
+        contact_list_controller.loadContacts(context);
+
+        on_create_update = false;
     }
 
     public void saveContact(View view) {
@@ -49,35 +55,48 @@ public class EditContactActivity extends AppCompatActivity {
             return;
         }
 
-        if (!email_str.contains("@")){
+        if (!email_str.contains("@")) {
             email.setError("Must be an email address!");
             return;
         }
 
         String username_str = username.getText().toString();
-        String id = contact.getId(); // Reuse the contact id
+        String id = contact_controller.getId(); // Reuse the contact id
 
         Contact updated_contact = new Contact(username_str, email_str, id);
+        ContactController updated_contact_controller = new ContactController(updated_contact);
+        updated_contact_controller.addObserver(this);
         EditContactCommand editContactCommand = new EditContactCommand(contact_list, contact, updated_contact, context);
         editContactCommand.execute();
-        if (!editContactCommand.isExecuted()) {
+        if (!contact_list_controller.editContact(contact, updated_contact, context)) {
             username.setError("Username already taken!");
             return;
         }
 
+        contact_list_controller.removeObserver(this);
         // End EditContactActivity
         finish();
     }
 
     public void deleteContact(View view) {
 
-        DeleteContactCommand delete_contact_command = new DeleteContactCommand(contact_list, contact, context);
-        delete_contact_command.execute();
-        if (!delete_contact_command.isExecuted()){
+        if (!contact_list_controller.deleteContact(contact, context)) {
             return;
         }
+        contact_list_controller.removeObserver(this);
 
         // End EditContactActivity
         finish();
+    }
+
+    @Override
+    public void update() {
+        if (on_create_update) {
+            contact = contact_list_controller.getContact(pos);
+            contact_controller = new ContactController(contact);
+
+            username.setText(contact_controller.getUsername());
+            email.setText(contact_controller.getEmail());
+        }
     }
 }

@@ -1,7 +1,6 @@
 package com.example.sharingapp;
 
 import android.content.Context;
-
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
@@ -17,7 +16,7 @@ import java.util.ArrayList;
 /**
  * ContactList class
  */
-public class ContactList {
+public class ContactList extends Observable {
 
     private static ArrayList<Contact> contacts;
     private String FILENAME = "contacts.sav";
@@ -26,28 +25,30 @@ public class ContactList {
         contacts = new ArrayList<Contact>();
     }
 
-    public void setContacts(ArrayList<Contact> contact_list) {
-        contacts = contact_list;
-    }
-
     public ArrayList<Contact> getContacts() {
         return contacts;
     }
 
-    public ArrayList<String> getAllUsernames(){
+    public void setContacts(ArrayList<Contact> contact_list) {
+        contacts = contact_list;
+    }
+
+    public ArrayList<String> getAllUsernames() {
         ArrayList<String> username_list = new ArrayList<String>();
-        for (Contact u : contacts){
+        for (Contact u : contacts) {
             username_list.add(u.getUsername());
-            }
+        }
         return username_list;
     }
 
     public void addContact(Contact contact) {
         contacts.add(contact);
+        notifyObservers();
     }
 
     public void deleteContact(Contact contact) {
         contacts.remove(contact);
+        notifyObservers();
     }
 
     public Contact getContact(int index) {
@@ -58,9 +59,9 @@ public class ContactList {
         return contacts.size();
     }
 
-    public Contact getContactByUsername(String username){
-        for (Contact c : contacts){
-            if (c.getUsername().equals(username)){
+    public Contact getContactByUsername(String username) {
+        for (Contact c : contacts) {
+            if (c.getUsername().equals(username)) {
                 return c;
             }
         }
@@ -82,12 +83,12 @@ public class ContactList {
             if (contact.getId().equals(c.getId())) {
                 return pos;
             }
-            pos = pos+1;
+            pos = pos + 1;
         }
         return -1;
     }
 
-    public boolean isUsernameAvailable(String username){
+    public boolean isUsernameAvailable(String username) {
         for (Contact c : contacts) {
             if (c.getUsername().equals(username)) {
                 return false;
@@ -102,7 +103,8 @@ public class ContactList {
             FileInputStream fis = context.openFileInput(FILENAME);
             InputStreamReader isr = new InputStreamReader(fis);
             Gson gson = new Gson();
-            Type listType = new TypeToken<ArrayList<Contact>>() {}.getType();
+            Type listType = new TypeToken<ArrayList<Contact>>() {
+            }.getType();
             contacts = gson.fromJson(isr, listType); // temporary
             fis.close();
         } catch (FileNotFoundException e) {
@@ -110,6 +112,7 @@ public class ContactList {
         } catch (IOException e) {
             contacts = new ArrayList<Contact>();
         }
+        notifyObservers();
     }
 
     public boolean saveContacts(Context context) {

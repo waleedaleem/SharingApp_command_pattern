@@ -12,6 +12,7 @@ import android.widget.EditText;
 public class AddContactActivity extends AppCompatActivity {
 
     private ContactList contact_list = new ContactList();
+    private ContactListController contact_list_controller = new ContactListController(contact_list);
     private Context context;
 
     private EditText username;
@@ -26,7 +27,7 @@ public class AddContactActivity extends AppCompatActivity {
         email = (EditText) findViewById(R.id.email);
 
         context = getApplicationContext();
-        contact_list.loadContacts(context);
+        contact_list_controller.loadContacts(context);
     }
 
     public void saveContact(View view) {
@@ -50,9 +51,7 @@ public class AddContactActivity extends AppCompatActivity {
         }
 
         Contact contact = new Contact(username_str, email_str, null);
-        AddContactCommand addContactCommand = new AddContactCommand(contact_list, contact, context);
-        addContactCommand.execute();
-        if (!addContactCommand.isExecuted()) {
+        if (!contact_list_controller.addContact(contact, context)) {
             username.setError("Username already taken!");
             return;
         }
